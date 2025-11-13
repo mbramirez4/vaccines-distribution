@@ -17,6 +17,12 @@ public class Point {
         return yCoordinate;
     }
 
+    public double calculateDistance(Point p) {
+        int dx = xCoordinate - p.getXCoordinate();
+        int dy = yCoordinate - p.getYCoordinate();
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
     @Override
     public String toString() {
         return "Point{" +
