@@ -2,7 +2,7 @@ package vaccinesdistribution.Interface;
 
 public interface Perishable {
     int getId();
-    int getPerishDate();
+    int getExpirationDate();
     void setExpired();
     boolean isExpired();
     int getQuantity();

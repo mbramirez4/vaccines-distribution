@@ -1,6 +1,7 @@
 package vaccinesdistribution.Model;
 
 import vaccinesdistribution.Interface.Perishable;
+import vaccinesdistribution.Interface.PositionedObject;
 
 public class VaccineBatch implements Perishable, Comparable<Perishable> {
     private static int idCounter = 0;
@@ -9,7 +10,7 @@ public class VaccineBatch implements Perishable, Comparable<Perishable> {
     private int availableVaccines;
     private int perishDate;
     private boolean expired = false;
-    private StoreIdentifier storeIdentifier;
+    private PositionedObject storeIdentifier;
     
     public VaccineBatch(int quantity, int perishDate) {
         this.id = idCounter++;
@@ -20,21 +21,21 @@ public class VaccineBatch implements Perishable, Comparable<Perishable> {
     public VaccineBatch(VaccineBatch batch, int quantity) {
         this.id = batch.getId();
         this.availableVaccines = quantity;
-        this.perishDate = batch.getPerishDate();
+        this.perishDate = batch.getExpirationDate();
         this.expired = batch.isExpired();
         this.storeIdentifier = batch.getStoreIdentifier();
     }
 
-    public void sendToStore(StoreIdentifier storeIdentifier) {
+    public void sendToStore(PositionedObject storeIdentifier) {
         this.storeIdentifier = storeIdentifier;
     }
 
-    public StoreIdentifier getStoreIdentifier() {
+    public PositionedObject getStoreIdentifier() {
         return storeIdentifier;
     }
 
     @Override
-    public int getPerishDate() {
+    public int getExpirationDate() {
         return perishDate;
     }
 
@@ -87,7 +88,7 @@ public class VaccineBatch implements Perishable, Comparable<Perishable> {
         
         VaccineBatch that = (VaccineBatch) o;
         return (
-            Integer.valueOf(getPerishDate()).equals(that.getPerishDate())
+            Integer.valueOf(getExpirationDate()).equals(that.getExpirationDate())
             && Integer.valueOf(getQuantity()).equals(that.getQuantity())
             && Integer.valueOf(getStorageId()).equals(that.getStorageId())
             && Integer.valueOf(getId()).equals(that.getId())
@@ -96,7 +97,7 @@ public class VaccineBatch implements Perishable, Comparable<Perishable> {
 
     @Override
     public int compareTo(Perishable o) {
-        int perishComparison = Integer.compare(getPerishDate(), o.getPerishDate());
+        int perishComparison = Integer.compare(getExpirationDate(), o.getExpirationDate());
         if (perishComparison != 0) return perishComparison;
         
         int availableVaccinesComparison = Integer.compare(getQuantity(), o.getQuantity());

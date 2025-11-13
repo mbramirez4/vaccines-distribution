@@ -3,6 +3,7 @@ package vaccinesdistribution.Model;
 import java.util.Map;
 import java.util.HashMap;
 
+import vaccinesdistribution.Interface.PositionedObject;
 import vaccinesdistribution.Util.Point;
 
 public class Order {
@@ -12,12 +13,21 @@ public class Order {
     private int quantity;
     private Point deliveryLocation;
     private boolean isDispatched = false;
-    private Map<StoreIdentifier, Integer> dispatchers = new HashMap<>();
+    private boolean isRejected = false;
+    private Map<PositionedObject, Integer> dispatchers = new HashMap<>();
 
     public Order(int quantity, Point deliveryLocation) {
         this.id = idCounter++;
         this.quantity = quantity;
         this.deliveryLocation = deliveryLocation;
+    }
+
+    public Order(Order order, int quantity) {
+        this.id = order.getId();
+        this.quantity = quantity;
+        this.deliveryLocation = order.getDeliveryLocation();
+        this.isDispatched = order.isDispatched();
+        this.isRejected = order.isRejected();
     }
 
     public int getId() {
@@ -36,6 +46,18 @@ public class Order {
         return isDispatched;
     }
 
+    public void setDispatched() {
+        isDispatched = true;
+    }
+
+    public boolean isRejected() {
+        return isRejected;
+    }
+
+    public void setRejected() {
+        isRejected = true;
+    }
+
     // public List<StoreIdentifier> getDispatchers() {
     //     return dispatchers;
     // }
@@ -46,7 +68,8 @@ public class Order {
             "id=" + id +
             ", quantity=" + quantity +
             ", deliveryLocation=" + deliveryLocation +
-            ", isDispatched=" + isDispatched;
+            ", isDispatched=" + isDispatched +
+            ", isRejected=" + isRejected;
         
         if (isDispatched) message += ", dispatchedFrom=" + dispatchers;
         message += '}';

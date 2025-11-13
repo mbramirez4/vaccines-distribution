@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 import vaccinesdistribution.Interface.Perishable;
+import vaccinesdistribution.Interface.PositionedObject;
 
-public class Store {
-    private StoreIdentifier identifier;
+public class Warehouse {
+    private PositionedObject identifier;
+    private List<Perishable> expiredBatches = new ArrayList<>();
     private PriorityQueue<Perishable> vaccineBatches = new PriorityQueue<>();
 
     @Override
@@ -15,12 +17,16 @@ public class Store {
         return identifier.toString();
     }
 
-    public Store(StoreIdentifier identifier) {
+    public Warehouse(PositionedObject identifier) {
         this.identifier = identifier;
     }
 
-    public StoreIdentifier getIdentifier() {
-        return new StoreIdentifier(identifier.getName(), identifier.getLocation());
+    public PositionedObject getIdentifier() {
+        return identifier;
+    }
+
+    public Perishable getTopPriorityObject() {
+        return vaccineBatches.peek();
     }
 
     public List<Perishable> dispatch(int quantity) {
@@ -29,7 +35,7 @@ public class Store {
         List<Perishable> dispatchedBatches = new ArrayList<>();
         
         while (quantity > 0 && !vaccineBatches.isEmpty()) {
-            batch = vaccineBatches.peek();
+            batch = getTopPriorityObject();
             if (batch.isExpired()) {
                 vaccineBatches.poll();
                 continue;
@@ -47,12 +53,25 @@ public class Store {
         return dispatchedBatches;
     }
 
+    public void disposeExpiredObjects(int currentDate){
+        Perishable batch;
+        while (true) {
+            batch = getTopPriorityObject();
+            if (batch == null || batch.getExpirationDate() > currentDate) break;
+
+            batch.setExpired();
+            expiredBatches.add(batch);
+            vaccineBatches.poll();
+            continue;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Store store = (Store) o;
+        Warehouse Warehouse = (Warehouse) o;
 
-        return identifier.equals(store.getIdentifier());
+        return identifier.equals(Warehouse.getIdentifier());
     }
 }

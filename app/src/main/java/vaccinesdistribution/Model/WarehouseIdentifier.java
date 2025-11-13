@@ -3,14 +3,16 @@ package vaccinesdistribution.Model;
 import java.util.Objects;
 
 import vaccinesdistribution.Util.Point;
-public class StoreIdentifier {
+import vaccinesdistribution.Interface.PositionedObject;
+
+public class WarehouseIdentifier implements PositionedObject {
     private static int idCounter = 0;
     private int id;
     private String name;
     private Point location;
     
 
-    public StoreIdentifier(String name, Point location) {
+    public WarehouseIdentifier(String name, Point location) {
         this.id = idCounter++;
         this.name = name;
         this.location = location;
@@ -20,10 +22,12 @@ public class StoreIdentifier {
         return id;
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public Point getLocation() {
         return location;
     }
@@ -40,7 +44,7 @@ public class StoreIdentifier {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        StoreIdentifier that = (StoreIdentifier) o;
+        WarehouseIdentifier that = (WarehouseIdentifier) o;
 
         return id == that.getId() && name.equals(that.getName()) && location.equals(that.getLocation());
     }
