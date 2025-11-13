@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -19,6 +20,7 @@ import vaccinesdistribution.Util.Point;
 
 public class Distributor {
     private static final Distributor distributor = new Distributor();
+    private static final String WAREHOUSE_FILE_PATH = "app/src/main/resources/warehouses_storage.json";
 
     private SpatialCollection<Warehouse> stores = new ArraySpatialCollection<>();
     private Queue<Order> dailyOrders = new ArrayDeque<>();
@@ -29,10 +31,38 @@ public class Distributor {
     private Distributor() {
         availableBatches = 0;
         currentDay = 0;
+        try {
+            stores.setItemsFromList(
+                Storage.loadWarehousesFromJsonFile(WAREHOUSE_FILE_PATH)
+            );
+        } catch (IOException e) {
+            System.out.println("Error loading warehouses from JSON file: " + e.getMessage());
+            // Implement logs
+        }
+
+        for (Warehouse warehouse : stores.getItems()) {
+            availableBatches += warehouse.getAvailableBatches();
+        }
     }
 
     public static Distributor getDistributor() {
         return distributor;
+    }
+
+    public List<Warehouse> getWarehouses() {
+        return stores.getItems();
+    }
+
+    public void addWarehouse(Warehouse warehouse) {
+        stores.add(warehouse);
+    }
+
+    public int getCurrentDay() {
+        return currentDay;
+    }
+
+    public int getAvailableBatches() {
+        return availableBatches;
     }
 
     public void finishDay() {

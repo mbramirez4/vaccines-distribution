@@ -10,6 +10,7 @@ import vaccinesdistribution.Interface.PositionedObject;
 import vaccinesdistribution.Util.Point;
 
 public class Warehouse implements Locatable {
+    private int availableBatches;
     private PositionedObject identifier;
     private List<Perishable> expiredBatches = new ArrayList<>();
     private PriorityQueue<Perishable> vaccineBatches = new PriorityQueue<>();
@@ -20,7 +21,12 @@ public class Warehouse implements Locatable {
     }
 
     public Warehouse(PositionedObject identifier) {
+        this.availableBatches = 0;
         this.identifier = identifier;
+    }
+
+    public int getAvailableBatches() {
+        return availableBatches;
     }
 
     public PositionedObject getIdentifier() {
@@ -61,7 +67,13 @@ public class Warehouse implements Locatable {
             batch = getTopPriorityObject();
             if (batch == null || batch.getExpirationDate() > currentDate) break;
 
+            if (batch.getQuantity() <= 0) {
+                vaccineBatches.poll();
+                continue;
+            }
+
             batch.setExpired();
+            availableBatches -= batch.getQuantity();
             expiredBatches.add(batch);
             vaccineBatches.poll();
             continue;
@@ -72,6 +84,8 @@ public class Warehouse implements Locatable {
         if (batch instanceof VaccineBatch) {
             ((VaccineBatch) batch).sendToStore(identifier);
         }
+
+        availableBatches += batch.getQuantity();
         vaccineBatches.add(batch);
     }
 
