@@ -73,6 +73,26 @@ public class Distributor {
         insertNewVaccines();
     }
 
+    public void dispatchNextOrder() {
+        Order order;
+        List<Perishable> dispatchedBatches;
+
+        order = dailyOrders.poll();
+        dispatchedBatches = dispatchOrder(order);
+        
+        if (order.isRejected()) return;
+
+        if (order.getQuantity() != computeBatchSize(dispatchedBatches)){
+            throw new RuntimeException("Dispatched quantity does not match order quantity for not rejected order. Order: " + order);
+        }
+    }
+
+    public void dispatchOrders() throws RuntimeException {
+        while (!dailyOrders.isEmpty()) {
+            dispatchNextOrder();
+        }
+    }
+
     public void createOrder(int quantity, Point deliveryLocation) throws IllegalArgumentException {
         if (quantity <= 0) throw new IllegalArgumentException("Invalid quantity");
         if (quantity > 0.1 * availableBatches) throw new IllegalArgumentException("Cannot order more than 10% of available vaccines");
@@ -128,7 +148,14 @@ public class Distributor {
 
         // if there is no more quantity to dispatch or the neighborhood size
         // is greater than the number of warehouses in the system then return
-        if (quantity <= 0 || neighborhoodSize >= stores.size()) return totalDispatchedBatches;
+        if (quantity <= 0) {
+            order.setDispatched();
+            return totalDispatchedBatches;
+        }
+
+        if (neighborhoodSize >= stores.size()) {
+            throw new RuntimeException("Neighborhood size is greater than the number of warehouses in the system and the order cannot be totally dispatched");
+        }
 
         Order newOrder = new Order(order, quantity);
         totalDispatchedBatches.addAll(dispatchOrder(newOrder, 2 * neighborhoodSize, totalDispatchedBatches));
@@ -142,23 +169,6 @@ public class Distributor {
             quantity += batch.getQuantity();
         }
         return quantity;
-    }
-
-    private void dispatchOrders() throws RuntimeException {
-        Order order;
-        List<Perishable> dispatchedBatches;
-        while (!dailyOrders.isEmpty()) {
-            order = dailyOrders.poll();
-            dispatchedBatches = dispatchOrder(order);
-            
-            if (order.isRejected()) continue;
-
-            if (order.getQuantity() != computeBatchSize(dispatchedBatches)){
-                throw new RuntimeException("Dispatched quantity does not match order quantity for not rejected order. Order: " + order);
-            }
-
-            order.setDispatched();
-        }
     }
 
     private void disposeExpiredObjects() {

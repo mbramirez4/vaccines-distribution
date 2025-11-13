@@ -53,6 +53,7 @@ public class Warehouse implements Locatable {
             dispatchedBatches.add(dispatchedBatch);
 
             quantity -= dispatchedBatch.getQuantity();
+            availableBatches -= dispatchedBatch.getQuantity();
             if (batch.getQuantity() <= 0) {
                 vaccineBatches.poll();
             }

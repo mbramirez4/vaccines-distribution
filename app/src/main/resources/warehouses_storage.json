@@ -20,8 +20,8 @@
   },
   {
     "name": "wh3",
-    "x_coordinate": 456,
-    "y_coordinate": 890,
+    "x_coordinate": 808,
+    "y_coordinate": 80,
     "vaccine_batches": [
       {"batch_size": 200, "expiration_date": 30}
     ]
@@ -284,8 +284,8 @@
   },
   {
     "name": "wh38",
-    "x_coordinate": 567,
-    "y_coordinate": 123,
+    "x_coordinate": 57,
+    "y_coordinate": 32,
     "vaccine_batches": [
       {"batch_size": 108, "expiration_date": 20}
     ]
@@ -329,8 +329,8 @@
   },
   {
     "name": "wh44",
-    "x_coordinate": 345,
-    "y_coordinate": 234,
+    "x_coordinate": 53,
+    "y_coordinate": 498,
     "vaccine_batches": [
       {"batch_size": 63, "expiration_date": 14},
       {"batch_size": 121, "expiration_date": 22}
@@ -370,8 +370,8 @@
   },
   {
     "name": "wh49",
-    "x_coordinate": 456,
-    "y_coordinate": 234
+    "x_coordinate": 46,
+    "y_coordinate": 204
   },
   {
     "name": "wh50",
