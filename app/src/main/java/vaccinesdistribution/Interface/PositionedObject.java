@@ -1,9 +1,6 @@
 package vaccinesdistribution.Interface;
 
-import vaccinesdistribution.Util.Point;
-
-public interface PositionedObject {
+public interface PositionedObject extends Locatable {
     int getId();
     String getName();
-    Point getLocation();
 }

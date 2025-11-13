@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 import vaccinesdistribution.Interface.Perishable;
+import vaccinesdistribution.Interface.Locatable;
 import vaccinesdistribution.Interface.PositionedObject;
+import vaccinesdistribution.Util.Point;
 
-public class Warehouse {
+public class Warehouse implements Locatable {
     private PositionedObject identifier;
     private List<Perishable> expiredBatches = new ArrayList<>();
     private PriorityQueue<Perishable> vaccineBatches = new PriorityQueue<>();
@@ -64,6 +66,11 @@ public class Warehouse {
             vaccineBatches.poll();
             continue;
         }
+    }
+
+    @Override
+    public Point getLocation() {
+        return identifier.getLocation();
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.util.List;
 
 import vaccinesdistribution.Util.Point;
 
-public interface SpatialCollection<E> {
+public interface SpatialCollection<E extends Locatable> {
     /**
      * Returns the number of elements in this collection
      * @return the number of elements in this collection
@@ -32,5 +32,5 @@ public interface SpatialCollection<E> {
 
     List<E> getKClosestItems(Point p, int k);
 
-    SpatialCollection<E> fromList(List<E> items);
+    void setItemsFromList(List<E> items);
 }
