@@ -7,11 +7,13 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
 import java.util.PriorityQueue;
+import java.util.Random;
 
 import vaccinesdistribution.Interface.Perishable;
 import vaccinesdistribution.Interface.SpatialCollection;
 import vaccinesdistribution.Model.Warehouse;
 import vaccinesdistribution.Model.Order;
+import vaccinesdistribution.Model.VaccineBatch;
 import vaccinesdistribution.Util.ArraySpatialCollection;
 import vaccinesdistribution.Util.Point;
 
@@ -21,11 +23,11 @@ public class Distributor {
     private SpatialCollection<Warehouse> stores = new ArraySpatialCollection<>();
     private Queue<Order> dailyOrders = new ArrayDeque<>();
     
-    private int vaccinesAvailable;
+    private int availableBatches;
     private int currentDay;
 
     private Distributor() {
-        vaccinesAvailable = 0;
+        availableBatches = 0;
         currentDay = 0;
     }
 
@@ -43,7 +45,7 @@ public class Distributor {
 
     public void createOrder(int quantity, Point deliveryLocation) throws IllegalArgumentException {
         if (quantity <= 0) throw new IllegalArgumentException("Invalid quantity");
-        if (quantity > 0.1 * vaccinesAvailable) throw new IllegalArgumentException("Cannot order more than 10% of available vaccines");
+        if (quantity > 0.1 * availableBatches) throw new IllegalArgumentException("Cannot order more than 10% of available vaccines");
 
         addOrder(new Order(quantity, deliveryLocation));
     }
@@ -61,7 +63,7 @@ public class Distributor {
 
     private List<Perishable> dispatchOrder(Order order, int neighborhoodSize, List<Perishable> totalDispatchedBatches) {
         int quantity = order.getQuantity();
-        if (quantity > vaccinesAvailable) {
+        if (quantity > availableBatches) {
             order.setRejected();
             return totalDispatchedBatches;
         }
@@ -89,9 +91,9 @@ public class Distributor {
             dispatchedBatches = dispatcherWarehouse.dispatch(quantity);
             totalDispatchedBatches.addAll(dispatchedBatches);
 
-            dispatchedQuantity = getDispatchedQuantity(dispatchedBatches);
+            dispatchedQuantity = computeBatchSize(dispatchedBatches);
             quantity -= dispatchedQuantity;
-            vaccinesAvailable -= dispatchedQuantity;
+            availableBatches -= dispatchedQuantity;
         }
 
         // if there is no more quantity to dispatch or the neighborhood size
@@ -104,7 +106,7 @@ public class Distributor {
         return totalDispatchedBatches;
     }
 
-    private static int getDispatchedQuantity(List<Perishable> dispatchedBatches) {
+    private static int computeBatchSize(List<Perishable> dispatchedBatches) {
         int quantity = 0;
         for (Perishable batch : dispatchedBatches) {
             quantity += batch.getQuantity();
@@ -121,7 +123,7 @@ public class Distributor {
             
             if (order.isRejected()) continue;
 
-            if (order.getQuantity() != getDispatchedQuantity(dispatchedBatches)){
+            if (order.getQuantity() != computeBatchSize(dispatchedBatches)){
                 throw new RuntimeException("Dispatched quantity does not match order quantity for not rejected order. Order: " + order);
             }
 
@@ -136,9 +138,29 @@ public class Distributor {
     }
 
     private void insertNewVaccines() {
+        Random random = new Random();
+        // Number of batches of vaccines to insert in the the system. A
+        // random number between 10 and 50.
+        int nBatches = random.nextInt(41) + 10;
+        
+        List<Warehouse> warehouseList = stores.getItems();
+        if (warehouseList.isEmpty()) {
+            return;
+        }
 
-        // for (Warehouse Warehouse : stores) {
-        //     Warehouse.insertNewVaccines();
-        // }
+        int batchSize; // It'll be a random number between 50 and 200 for each batch.
+        int daysToExpire; // It'll be a random number between 10 and 30 for each batch.
+        VaccineBatch batch;
+        Warehouse randomWarehouse;
+        for (int i = 0; i < nBatches; i++) {
+            batchSize = random.nextInt(151) + 50;
+            daysToExpire = random.nextInt(21) + 10;
+            
+            batch = new VaccineBatch(batchSize, currentDay + daysToExpire);
+            randomWarehouse = warehouseList.get(random.nextInt(warehouseList.size()));            
+            randomWarehouse.registerPerishableBatch(batch);
+            
+            availableBatches += batchSize;
+        }
     }
 }

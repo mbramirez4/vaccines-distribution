@@ -68,6 +68,13 @@ public class Warehouse implements Locatable {
         }
     }
 
+    public void registerPerishableBatch(Perishable batch) {
+        if (batch instanceof VaccineBatch) {
+            ((VaccineBatch) batch).sendToStore(identifier);
+        }
+        vaccineBatches.add(batch);
+    }
+
     @Override
     public Point getLocation() {
         return identifier.getLocation();
