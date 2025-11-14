@@ -30,6 +30,7 @@ public class VaccineBatch implements Perishable, Comparable<Perishable> {
         this.storeIdentifier = storeIdentifier;
     }
 
+    @Override
     public PositionedObject getStoreIdentifier() {
         return storeIdentifier;
     }

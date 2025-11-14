@@ -1,8 +1,10 @@
 package vaccinesdistribution.Model;
 
 import java.util.Map;
+import java.util.List;
 import java.util.HashMap;
 
+import vaccinesdistribution.Interface.Perishable;
 import vaccinesdistribution.Interface.PositionedObject;
 import vaccinesdistribution.Util.Point;
 
@@ -58,9 +60,15 @@ public class Order {
         isRejected = true;
     }
 
-    // public List<StoreIdentifier> getDispatchers() {
-    //     return dispatchers;
-    // }
+    public void computeDispatchers(List<Perishable> dispatchedBatches) {
+        PositionedObject identifier;
+        for (Perishable batch : dispatchedBatches) {
+            identifier = batch.getStoreIdentifier();
+            dispatchers.put(
+                identifier,
+                (dispatchers.get(identifier) == null ? 0 : dispatchers.get(identifier)) + batch.getQuantity());
+        }
+    }
 
     @Override
     public String toString() {

@@ -7,5 +7,6 @@ public interface Perishable {
     boolean isExpired();
     int getQuantity();
     int getStorageId();
+    PositionedObject getStoreIdentifier();
     Perishable dispatch(int quantity);
 }
