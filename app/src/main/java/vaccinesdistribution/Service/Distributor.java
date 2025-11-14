@@ -6,6 +6,7 @@ import java.util.Queue;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.io.IOException;
+import java.util.Deque;
 import java.util.ArrayDeque;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -30,9 +31,9 @@ public class Distributor {
 
 
     private SpatialCollection<Warehouse> stores = new ArraySpatialCollection<>();
-    private List<Order> historicOrders = new ArrayList<>();
     private List<Order> previousDayOrders = new ArrayList<>();
     private List<Order> currentDayOrders = new ArrayList<>();
+    private Deque<Order> historicOrders = new ArrayDeque<>();
     private Queue<Order> pendingOrders = new ArrayDeque<>();
     
     private int availableBatches;
@@ -79,6 +80,10 @@ public class Distributor {
         return new ArrayList<>(previousDayOrders);
     }
 
+    public List<Order> getCurrentDayOrders() {
+        return new ArrayList<>(currentDayOrders);
+    }
+
     public void finishDay() {
         dispatchOrders();
         currentDay++;
@@ -97,6 +102,7 @@ public class Distributor {
         order = pendingOrders.poll();
         logger.info("Order dispatching started " + order);
         dispatchedBatches = dispatchOrder(order);
+        logger.debug("Dispatched batches returned: " + dispatchedBatches);
         
         order.setDispatchedBatches(dispatchedBatches);
         logger.info("Dispatchers sucessfully computed");
