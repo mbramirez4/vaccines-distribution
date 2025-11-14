@@ -2,13 +2,16 @@
 <Configuration status="info" strict="true" name="Log4j2Config">
     <Properties>
         <Property name="log_pattern">%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="time_log_pattern">%d{yyyy-MM-dd HH:mm:ss} [%t:%class{-1}] %-5level %logger{36} - %msg%n</Property>
         <Property name="app_log_root">logs</Property>
         <Property name="base_name">vaccines-distribution_${hostName}</Property>
+        <Property name="time_analysis">vaccines-distribution.tiempos_${hostName}</Property>
     </Properties>
     <Appenders>
         <Console name="Console">
             <PatternLayout pattern="${log_pattern}"/>
         </Console>
+
         <RollingFile    name="FileLogger"
                         fileName="${app_log_root}/${base_name}.log"
                         filePattern="${app_log_root}/${base_name}_%d{yyyy-MM-dd}_%03i.log"
@@ -21,6 +24,18 @@
             </Policies>
             <DefaultRolloverStrategy max="5"/>
         </RollingFile>
+
+        <RollingFile    name="FileLoggerTime"
+                        filePattern="${app_log_root}/${time_analysis}_%d{yyyy-MM-dd}_%03i.log"
+                        append="true">
+            <PatternLayout pattern="${time_log_pattern}"/>
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+        </RollingFile>
+        
     </Appenders>
     <Loggers>
         <Root level="debug">
@@ -29,6 +44,10 @@
 
         <Logger name="main" level="debug" additivity="false">
             <AppenderRef ref="FileLogger"/>
+        </Logger>
+
+        <Logger name="times" level="debug" additivity="false">
+            <AppenderRef ref="FileLoggerTime"/>
         </Logger>
 
     </Loggers>

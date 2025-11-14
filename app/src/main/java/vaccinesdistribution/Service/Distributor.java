@@ -23,6 +23,7 @@ import vaccinesdistribution.Util.Point;
 
 public class Distributor {
     private static final Logger logger = LogManager.getLogger(Distributor.class);
+    private static final Logger timeLogger = LogManager.getLogger("times");
 
     private static final Distributor distributor = new Distributor();
     private static final String WAREHOUSE_FILE_PATH = "app/src/main/resources/warehouses_storage.json";
@@ -43,7 +44,7 @@ public class Distributor {
             );
             logger.info("Warehouses loaded successfully");
         } catch (IOException e) {
-            logger.error("Failed to load warehouses from file", e);
+            logger.error("Failed to load warehouses from file " + e);
         }
 
         for (Warehouse warehouse : stores.getItems()) {
@@ -83,18 +84,23 @@ public class Distributor {
         Order order;
         List<Perishable> dispatchedBatches;
 
+        long startTime = System.currentTimeMillis();
+
         order = dailyOrders.poll();
-        logger.info("Order dispatching started", order);
+        logger.info("Order dispatching started " + order);
         dispatchedBatches = dispatchOrder(order);
         
         order.computeDispatchers(dispatchedBatches);
         logger.info("Dispatchers sucessfully computed");
-        logger.info("Order dispatching finished", order);
+        logger.info("Order dispatching finished " + order);
+
+        long endTime = System.currentTimeMillis();
+        timeLogger.info("Order dispatching time: " + (endTime - startTime) + "ms");
         
         if (order.isRejected()) return;
 
         if (order.getQuantity() != computeBatchSize(dispatchedBatches)){
-            logger.error("Dispatched quantity + " + computeBatchSize(dispatchedBatches) + " does not match order quantity for not rejected order. Order: " + order + "\nDispatched: " + dispatchedBatches);
+            logger.error("Dispatched quantity " + computeBatchSize(dispatchedBatches) + " does not match order quantity for not rejected order. Order: " + order + "\nDispatched: " + dispatchedBatches);
             throw new RuntimeException("Dispatched quantity does not match order quantity for not rejected order. Order: " + order);
         }
     }
@@ -117,8 +123,8 @@ public class Distributor {
 
         Order order = new Order(quantity, deliveryLocation);
         addOrder(order);
-        logger.info("Order created successfully", order);
-        logger.debug("Daily orders updated", dailyOrders);
+        logger.info("Order created successfully " + order);
+        logger.debug("Daily orders updated " + dailyOrders);
     }
 
     private void addOrder(Order order) {
@@ -136,13 +142,17 @@ public class Distributor {
         int quantity = order.getQuantity();
         if (quantity > availableBatches) {
             order.setRejected();
-            logger.info("Not enough batches available to dispatch order", order);
+            logger.info("Not enough batches available to dispatch order " + order);
             return totalDispatchedBatches;
         }
         
-        logger.info("Computation of " + closestNeighboursSize + " closest stores to the deliveryLocation", order);
+        logger.info("Started computation of " + closestNeighboursSize + " closest stores to the deliveryLocation");
+        // long initialTime = System.nanoTime();
+        long initialTime = System.currentTimeMillis();
         List<Warehouse> closestStores = stores.getKClosestItems(order.getDeliveryLocation(), closestNeighboursSize);
-        logger.debug("Closest stores found for order " + order, closestStores);
+        long finalTime = System.currentTimeMillis();
+        timeLogger.info("Computation of " + closestNeighboursSize + " closest stores: " + (finalTime - initialTime) + "ms");
+        logger.debug("Closest stores found for order " + closestStores);
         
         // Sort the stores based on the priority of their perishables
         Perishable topPriorityObject;
@@ -155,7 +165,7 @@ public class Distributor {
             storeMap.put(warehouse.getIdentifier().getId(), warehouse);
             vaccineBatches.add(topPriorityObject);
         }
-        logger.debug("Successfully sorted stores based on their top priority perishable.", vaccineBatches);
+        logger.debug("Successfully sorted stores based on their top priority perishable " + vaccineBatches);
 
         int dispatchedQuantity;
         Perishable batch;
@@ -176,7 +186,7 @@ public class Distributor {
             quantity -= dispatchedQuantity;
             availableBatches -= dispatchedQuantity;
         }
-        logger.debug("Dequeuing finished. Current available batches: " + availableBatches + ", Batches missing: " + quantity);
+        logger.debug("Dequeuing finished. Current available batches: " + availableBatches + ", batches missing: " + quantity);
 
         // if there is no more quantity to dispatch or the neighborhood size
         // is greater than the number of warehouses in the system then return
@@ -194,9 +204,9 @@ public class Distributor {
         logger.info("Not enough batches available to dispatch order from the " + closestNeighboursSize + " closest stores.");
         logger.info("New order created to dispatch remaining quantity using the " + 2*closestNeighboursSize + " closest stores", newOrder);
 
-        logger.debug("ntotalDispatchedBatches is " + totalDispatchedBatches + "BEFORE dispatching newOrder", newOrder);
+        logger.debug("totalDispatchedBatches BEFORE dispatching newOrder is " + totalDispatchedBatches);
         dispatchOrder(newOrder, 2 * closestNeighboursSize, totalDispatchedBatches);
-        logger.debug("ntotalDispatchedBatches is " + totalDispatchedBatches + "AFTER dispatching newOrder", newOrder);
+        logger.debug("totalDispatchedBatches AFTER dispatching newOrder is " + totalDispatchedBatches);
 
         if (newOrder.isRejected()) {
             order.setRejected();
@@ -217,9 +227,13 @@ public class Distributor {
 
     private void disposeExpiredObjects() {
         logger.info("Disposition of expired objects started");
+
+        long initialTime = System.currentTimeMillis();
         for (Warehouse Warehouse : stores.getItems()) {
             Warehouse.disposeExpiredObjects(currentDay);
         }
+        long finalTime = System.currentTimeMillis();
+        timeLogger.info("Disposition of expired objects time: " + (finalTime - initialTime) + "ms");
         logger.info("Disposition of expired objects finished");
     }
 
@@ -240,6 +254,8 @@ public class Distributor {
         Warehouse randomWarehouse;
 
         logger.info("Insertion of new vaccines started. Current available batches: " + availableBatches);
+
+        long initialTime = System.currentTimeMillis();
         for (int i = 0; i < nBatches; i++) {
             batchSize = random.nextInt(151) + 50;
             daysToExpire = random.nextInt(21) + 10;
@@ -250,6 +266,8 @@ public class Distributor {
             
             availableBatches += batchSize;
         }
+        long finalTime = System.currentTimeMillis();
+        timeLogger.info("Insertion of new vaccines time: " + (finalTime - initialTime) + "ms");
         logger.info("Insertion of new vaccines finished. " + nBatches + " batches inserted. Current available batches: " + availableBatches);
     }
 }
