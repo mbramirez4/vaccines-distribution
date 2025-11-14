@@ -4,12 +4,17 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import vaccinesdistribution.Interface.Perishable;
 import vaccinesdistribution.Interface.Locatable;
 import vaccinesdistribution.Interface.PositionedObject;
 import vaccinesdistribution.Util.Point;
 
 public class Warehouse implements Locatable {
+    private static final Logger logger = LogManager.getLogger(Warehouse.class);
+    
     private int availableBatches;
     private PositionedObject identifier;
     private List<Perishable> expiredBatches = new ArrayList<>();
@@ -77,6 +82,7 @@ public class Warehouse implements Locatable {
             availableBatches -= batch.getQuantity();
             expiredBatches.add(batch);
             vaccineBatches.poll();
+            logger.info("Batch expired successfully", batch, "current date: " + currentDate);
             continue;
         }
     }
