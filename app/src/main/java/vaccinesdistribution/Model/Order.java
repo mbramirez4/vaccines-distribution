@@ -16,6 +16,8 @@ public class Order {
     private Point deliveryLocation;
     private boolean isDispatched = false;
     private boolean isRejected = false;
+    private int processingDate = -1;
+    private List<Perishable> dispatchedBatches;
     private Map<PositionedObject, Integer> dispatchers = new HashMap<>();
 
     public Order(int quantity, Point deliveryLocation) {
@@ -60,7 +62,24 @@ public class Order {
         isRejected = true;
     }
 
-    public void computeDispatchers(List<Perishable> dispatchedBatches) {
+    public void setDispatchedBatches(List<Perishable> dispatchedBatches) {
+        this.dispatchedBatches = dispatchedBatches;
+        computeDispatchers();
+    }
+
+    public void setProcessingDate(int processingDate) {
+        if (this.processingDate >= 0) {
+            throw new RuntimeException("Processing date already set");
+        }
+
+        this.processingDate = processingDate;
+    }
+
+    public int getProcessingDate() {
+        return processingDate;
+    }
+
+    private void computeDispatchers() {
         PositionedObject identifier;
         for (Perishable batch : dispatchedBatches) {
             identifier = batch.getStoreIdentifier();
