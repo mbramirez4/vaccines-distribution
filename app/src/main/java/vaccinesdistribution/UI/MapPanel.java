@@ -186,9 +186,11 @@ public class MapPanel extends JPanel {
         
         // Check previous day orders
         List<Order> previousDayOrders = distributor.getPreviousDayOrders();
+        Point location;
+        double distance;
         for (Order order : previousDayOrders) {
-            Point location = order.getDeliveryLocation();
-            double distance = Math.sqrt(
+            location = order.getDeliveryLocation();
+            distance = Math.sqrt(
                 Math.pow(location.getXCoordinate() - mouseWorld.getXCoordinate(), 2) +
                 Math.pow(location.getYCoordinate() - mouseWorld.getYCoordinate(), 2)
             );
@@ -201,8 +203,8 @@ public class MapPanel extends JPanel {
         // Check current day orders
         List<Order> currentDayOrders = distributor.getCurrentDayOrders();
         for (Order order : currentDayOrders) {
-            Point location = order.getDeliveryLocation();
-            double distance = Math.sqrt(
+            location = order.getDeliveryLocation();
+            distance = Math.sqrt(
                 Math.pow(location.getXCoordinate() - mouseWorld.getXCoordinate(), 2) +
                 Math.pow(location.getYCoordinate() - mouseWorld.getYCoordinate(), 2)
             );
@@ -219,8 +221,8 @@ public class MapPanel extends JPanel {
             double minWarehouseDistance = Double.MAX_VALUE;
             
             for (Warehouse warehouse : warehouses) {
-                Point location = warehouse.getLocation();
-                double distance = Math.sqrt(
+                location = warehouse.getLocation();
+                distance = Math.sqrt(
                     Math.pow(location.getXCoordinate() - mouseWorld.getXCoordinate(), 2) +
                     Math.pow(location.getYCoordinate() - mouseWorld.getYCoordinate(), 2)
                 );
@@ -363,9 +365,9 @@ public class MapPanel extends JPanel {
         }
 
         // Draw current day orders (orange/green/red)
+        Color orderColor;
         List<Order> currentDayOrders = distributor.getCurrentDayOrders();
         for (Order order : currentDayOrders) {
-            Color orderColor;
             if (order.isRejected()) {
                 orderColor = Color.RED;
             } else if (order.isDispatched()) {
@@ -389,8 +391,9 @@ public class MapPanel extends JPanel {
         maxY = Integer.MIN_VALUE;
 
         // Include warehouses in bounds
+        Point location;
         for (Warehouse warehouse : warehouses) {
-            Point location = warehouse.getLocation();
+            location = warehouse.getLocation();
             minX = Math.min(minX, location.getXCoordinate());
             maxX = Math.max(maxX, location.getXCoordinate());
             minY = Math.min(minY, location.getYCoordinate());
@@ -400,7 +403,7 @@ public class MapPanel extends JPanel {
         // Include previous day orders in bounds
         List<Order> previousDayOrders = distributor.getPreviousDayOrders();
         for (Order order : previousDayOrders) {
-            Point location = order.getDeliveryLocation();
+            location = order.getDeliveryLocation();
             minX = Math.min(minX, location.getXCoordinate());
             maxX = Math.max(maxX, location.getXCoordinate());
             minY = Math.min(minY, location.getYCoordinate());
@@ -410,7 +413,7 @@ public class MapPanel extends JPanel {
         // Include current day orders in bounds
         List<Order> currentDayOrders = distributor.getCurrentDayOrders();
         for (Order order : currentDayOrders) {
-            Point location = order.getDeliveryLocation();
+            location = order.getDeliveryLocation();
             minX = Math.min(minX, location.getXCoordinate());
             maxX = Math.max(maxX, location.getXCoordinate());
             minY = Math.min(minY, location.getYCoordinate());
@@ -466,15 +469,16 @@ public class MapPanel extends JPanel {
         int endY = (int) (Math.ceil(visibleMaxY / gridSpacing) * gridSpacing);
 
         // Draw vertical lines across the entire visible height
+        Point p1, p2, labelPos;
         for (int x = startX; x <= endX; x += gridSpacing) {
             // Draw line from top to bottom of visible area
-            Point p1 = worldToScreen(x, visibleMinY);
-            Point p2 = worldToScreen(x, visibleMaxY);
+            p1 = worldToScreen(x, visibleMinY);
+            p2 = worldToScreen(x, visibleMaxY);
             g2d.drawLine(p1.getXCoordinate(), p1.getYCoordinate(), 
                         p2.getXCoordinate(), p2.getYCoordinate());
             
             // Draw coordinate label at bottom of screen if line is visible
-            Point labelPos = worldToScreen(x, visibleMinY);
+            labelPos = worldToScreen(x, visibleMinY);
             int labelX = labelPos.getXCoordinate();
             if (labelX >= 0 && labelX < getWidth()) {
                 g2d.setColor(Color.DARK_GRAY);
@@ -487,13 +491,13 @@ public class MapPanel extends JPanel {
         // Draw horizontal lines across the entire visible width
         for (int y = startY; y <= endY; y += gridSpacing) {
             // Draw line from left to right of visible area
-            Point p1 = worldToScreen(visibleMinX, y);
-            Point p2 = worldToScreen(visibleMaxX, y);
+            p1 = worldToScreen(visibleMinX, y);
+            p2 = worldToScreen(visibleMaxX, y);
             g2d.drawLine(p1.getXCoordinate(), p1.getYCoordinate(), 
                         p2.getXCoordinate(), p2.getYCoordinate());
             
             // Draw coordinate label at left of screen if line is visible
-            Point labelPos = worldToScreen(visibleMinX, y);
+            labelPos = worldToScreen(visibleMinX, y);
             int labelY = labelPos.getYCoordinate();
             if (labelY >= 0 && labelY < getHeight()) {
                 g2d.setColor(Color.DARK_GRAY);
