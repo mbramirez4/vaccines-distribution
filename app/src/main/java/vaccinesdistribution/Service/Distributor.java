@@ -30,7 +30,10 @@ public class Distributor {
 
 
     private SpatialCollection<Warehouse> stores = new ArraySpatialCollection<>();
-    private Queue<Order> dailyOrders = new ArrayDeque<>();
+    private List<Order> historicOrders = new ArrayList<>();
+    private List<Order> previousDayOrders = new ArrayList<>();
+    private List<Order> currentDayOrders = new ArrayList<>();
+    private Queue<Order> pendingOrders = new ArrayDeque<>();
     
     private int availableBatches;
     private int currentDay;
@@ -72,12 +75,17 @@ public class Distributor {
         return availableBatches;
     }
 
+    public List<Order> getPreviousDayOrders() {
+        return new ArrayList<>(previousDayOrders);
+    }
+
     public void finishDay() {
         dispatchOrders();
         currentDay++;
 
         disposeExpiredObjects();
         insertNewVaccines();
+        setPreviousDayOrders();
     }
 
     public void dispatchNextOrder() {
@@ -86,15 +94,18 @@ public class Distributor {
 
         long startTime = System.currentTimeMillis();
 
-        order = dailyOrders.poll();
+        order = pendingOrders.poll();
         logger.info("Order dispatching started " + order);
         dispatchedBatches = dispatchOrder(order);
         
-        order.computeDispatchers(dispatchedBatches);
+        order.setDispatchedBatches(dispatchedBatches);
         logger.info("Dispatchers sucessfully computed");
         logger.info("Order dispatching finished " + order);
 
         long endTime = System.currentTimeMillis();
+
+        order.setProcessingDate(currentDay);
+        historicOrders.add(order);
         timeLogger.info("Order dispatching time: " + (endTime - startTime) + "ms");
         
         if (order.isRejected()) return;
@@ -106,7 +117,7 @@ public class Distributor {
     }
 
     public void dispatchOrders() throws RuntimeException {
-        while (!dailyOrders.isEmpty()) {
+        while (!pendingOrders.isEmpty()) {
             dispatchNextOrder();
         }
     }
@@ -124,11 +135,12 @@ public class Distributor {
         Order order = new Order(quantity, deliveryLocation);
         addOrder(order);
         logger.info("Order created successfully " + order);
-        logger.debug("Daily orders updated " + dailyOrders);
+        logger.debug("Daily orders updated " + pendingOrders);
     }
 
     private void addOrder(Order order) {
-        dailyOrders.add(order);
+        pendingOrders.add(order);
+        currentDayOrders.add(order);
     }
     
     private List<Perishable> dispatchOrder(Order order) {
@@ -269,5 +281,10 @@ public class Distributor {
         long finalTime = System.currentTimeMillis();
         timeLogger.info("Insertion of new vaccines time: " + (finalTime - initialTime) + "ms");
         logger.info("Insertion of new vaccines finished. " + nBatches + " batches inserted. Current available batches: " + availableBatches);
+    }
+
+    private void setPreviousDayOrders() {
+        previousDayOrders = new ArrayList<>(currentDayOrders);
+        currentDayOrders = new ArrayList<>();
     }
 }
