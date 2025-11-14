@@ -8,6 +8,8 @@ import java.awt.event.ActionListener;
 
 import vaccinesdistribution.Service.Distributor;
 import vaccinesdistribution.Util.Point;
+import vaccinesdistribution.Model.Order;
+import java.util.List;
 
 public class SidePanel extends JPanel {
     private Distributor distributor;
@@ -225,6 +227,19 @@ public class SidePanel extends JPanel {
                 addMessage("Finished day. Day advanced to: " + distributor.getCurrentDay());
                 addMessage("Available Batches: " + distributor.getAvailableBatches());
                 addMessage("Expired objects disposed and new vaccines inserted.");
+                
+                // Display previous day orders information
+                List<Order> previousDayOrders = distributor.getPreviousDayOrders();
+                addMessage("--- Previous Day Orders (" + previousDayOrders.size() + ") ---");
+                if (previousDayOrders.isEmpty()) {
+                    addMessage("No orders from the previous day.");
+                } else {
+                    for (Order order : previousDayOrders) {
+                        addMessage("  " + order.toString());
+                    }
+                }
+                addMessage("--- End of Previous Day Orders ---");
+                
                 parentUI.refreshMap();
             } catch (RuntimeException ex) {
                 addMessage("Error finishing day: " + ex.getMessage());

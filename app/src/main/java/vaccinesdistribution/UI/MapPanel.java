@@ -7,6 +7,7 @@ import java.util.List;
 
 import vaccinesdistribution.Service.Distributor;
 import vaccinesdistribution.Model.Warehouse;
+import vaccinesdistribution.Model.Order;
 import vaccinesdistribution.Interface.Perishable;
 import vaccinesdistribution.Util.Point;
 
@@ -18,6 +19,7 @@ public class MapPanel extends JPanel {
     private int maxY = Integer.MIN_VALUE;
     private static final int PADDING = 50;
     private static final int WAREHOUSE_SIZE = 10;
+    private static final int ORDER_SIZE = 8;
     private static final double MIN_ZOOM = 0.1;
     private static final double MAX_ZOOM = 10.0;
     private static final double ZOOM_IN_FACTOR = 1.05;  // Smaller factor for smoother zoom in
@@ -33,6 +35,7 @@ public class MapPanel extends JPanel {
     private int lastMouseY = 0;
     private boolean isDragging = false;
     private Warehouse hoveredWarehouse = null;
+    private Order hoveredOrder = null;
     
     // Tooltip
     private JLabel tooltipLabel;
@@ -105,7 +108,7 @@ public class MapPanel extends JPanel {
 
             @Override
             public void mouseMoved(MouseEvent e) {
-                updateHoveredWarehouse(e.getX(), e.getY());
+                updateHoveredObjects(e.getX(), e.getY());
             }
         });
 
@@ -173,43 +176,91 @@ public class MapPanel extends JPanel {
         tooltipWindow.pack();
     }
 
-    private void updateHoveredWarehouse(int screenX, int screenY) {
-        List<Warehouse> warehouses = distributor.getWarehouses();
-        if (warehouses.isEmpty()) {
-            hideTooltip();
-            return;
-        }
-
-        Warehouse closest = null;
-        double minDistance = Double.MAX_VALUE;
+    private void updateHoveredObjects(int screenX, int screenY) {
         Point mouseWorld = screenToWorld(screenX, screenY);
-
-        for (Warehouse warehouse : warehouses) {
-            Point location = warehouse.getLocation();
+        double threshold = 20.0 / zoomLevel;
+        
+        // Check orders first (they should take priority for hover)
+        Order closestOrder = null;
+        double minOrderDistance = Double.MAX_VALUE;
+        
+        // Check previous day orders
+        List<Order> previousDayOrders = distributor.getPreviousDayOrders();
+        for (Order order : previousDayOrders) {
+            Point location = order.getDeliveryLocation();
             double distance = Math.sqrt(
                 Math.pow(location.getXCoordinate() - mouseWorld.getXCoordinate(), 2) +
                 Math.pow(location.getYCoordinate() - mouseWorld.getYCoordinate(), 2)
             );
-            
-            // Check if within reasonable distance (scaled by zoom)
-            double threshold = 20.0 / zoomLevel;
-            if (distance < threshold && distance < minDistance) {
-                minDistance = distance;
-                closest = warehouse;
+            if (distance < threshold && distance < minOrderDistance) {
+                minOrderDistance = distance;
+                closestOrder = order;
             }
         }
-
-        if (closest != hoveredWarehouse) {
-            hoveredWarehouse = closest;
-            if (hoveredWarehouse != null) {
-                showTooltip(hoveredWarehouse, screenX, screenY);
-            } else {
-                hideTooltip();
+        
+        // Check current day orders
+        List<Order> currentDayOrders = distributor.getCurrentDayOrders();
+        for (Order order : currentDayOrders) {
+            Point location = order.getDeliveryLocation();
+            double distance = Math.sqrt(
+                Math.pow(location.getXCoordinate() - mouseWorld.getXCoordinate(), 2) +
+                Math.pow(location.getYCoordinate() - mouseWorld.getYCoordinate(), 2)
+            );
+            if (distance < threshold && distance < minOrderDistance) {
+                minOrderDistance = distance;
+                closestOrder = order;
             }
-            repaint();
+        }
+        
+        // Check warehouses only if no order is hovered
+        Warehouse closestWarehouse = null;
+        if (closestOrder == null) {
+            List<Warehouse> warehouses = distributor.getWarehouses();
+            double minWarehouseDistance = Double.MAX_VALUE;
+            
+            for (Warehouse warehouse : warehouses) {
+                Point location = warehouse.getLocation();
+                double distance = Math.sqrt(
+                    Math.pow(location.getXCoordinate() - mouseWorld.getXCoordinate(), 2) +
+                    Math.pow(location.getYCoordinate() - mouseWorld.getYCoordinate(), 2)
+                );
+                
+                if (distance < threshold && distance < minWarehouseDistance) {
+                    minWarehouseDistance = distance;
+                    closestWarehouse = warehouse;
+                }
+            }
+        }
+        
+        // Update hovered objects
+        boolean needsRepaint = false;
+        if (closestOrder != hoveredOrder) {
+            hoveredOrder = closestOrder;
+            needsRepaint = true;
+        }
+        if (closestWarehouse != hoveredWarehouse) {
+            hoveredWarehouse = closestWarehouse;
+            needsRepaint = true;
+        }
+        
+        // Show/hide tooltip
+        if (hoveredOrder != null) {
+            showOrderTooltip(hoveredOrder, screenX, screenY);
         } else if (hoveredWarehouse != null) {
-            // Update tooltip position
             showTooltip(hoveredWarehouse, screenX, screenY);
+        } else {
+            hideTooltip();
+        }
+        
+        if (needsRepaint) {
+            repaint();
+        } else if (hoveredOrder != null || hoveredWarehouse != null) {
+            // Update tooltip position
+            if (hoveredOrder != null) {
+                showOrderTooltip(hoveredOrder, screenX, screenY);
+            } else {
+                showTooltip(hoveredWarehouse, screenX, screenY);
+            }
         }
     }
 
@@ -231,6 +282,42 @@ public class MapPanel extends JPanel {
         } else {
             tooltipText.append("Top Priority Batch: None");
         }
+        tooltipText.append("</html>");
+        
+        tooltipLabel.setText(tooltipText.toString());
+        tooltipWindow.pack();
+        
+        // Position tooltip near cursor
+        java.awt.Point windowLocation = getLocationOnScreen();
+        tooltipWindow.setLocation(
+            windowLocation.x + screenX + 15,
+            windowLocation.y + screenY + 15
+        );
+        tooltipWindow.setVisible(true);
+    }
+
+    private void showOrderTooltip(Order order, int screenX, int screenY) {
+        Point location = order.getDeliveryLocation();
+        
+        StringBuilder tooltipText = new StringBuilder("<html>");
+        tooltipText.append("<b>Order #").append(order.getId()).append("</b><br>");
+        tooltipText.append("Location: (").append(location.getXCoordinate())
+                   .append(", ").append(location.getYCoordinate()).append(")<br>");
+        tooltipText.append("Quantity: ").append(order.getQuantity()).append("<br>");
+        tooltipText.append("Status: ");
+        
+        if (order.isRejected()) {
+            tooltipText.append("<font color='red'>Rejected</font>");
+        } else if (order.isDispatched()) {
+            tooltipText.append("<font color='green'>Dispatched</font>");
+        } else {
+            tooltipText.append("<font color='orange'>Pending</font>");
+        }
+        
+        if (order.getProcessingDate() >= 0) {
+            tooltipText.append("<br>Processed on Day: ").append(order.getProcessingDate());
+        }
+        
         tooltipText.append("</html>");
         
         tooltipLabel.setText(tooltipText.toString());
@@ -269,6 +356,26 @@ public class MapPanel extends JPanel {
         // Draw grid
         drawGrid(g2d);
 
+        // Draw previous day orders (gray)
+        List<Order> previousDayOrders = distributor.getPreviousDayOrders();
+        for (Order order : previousDayOrders) {
+            drawOrder(g2d, order, Color.GRAY);
+        }
+
+        // Draw current day orders (orange/green/red)
+        List<Order> currentDayOrders = distributor.getCurrentDayOrders();
+        for (Order order : currentDayOrders) {
+            Color orderColor;
+            if (order.isRejected()) {
+                orderColor = Color.RED;
+            } else if (order.isDispatched()) {
+                orderColor = Color.GREEN;
+            } else {
+                orderColor = Color.ORANGE;
+            }
+            drawOrder(g2d, order, orderColor);
+        }
+
         // Draw warehouses
         for (Warehouse warehouse : warehouses) {
             drawWarehouse(g2d, warehouse);
@@ -281,8 +388,29 @@ public class MapPanel extends JPanel {
         minY = Integer.MAX_VALUE;
         maxY = Integer.MIN_VALUE;
 
+        // Include warehouses in bounds
         for (Warehouse warehouse : warehouses) {
             Point location = warehouse.getLocation();
+            minX = Math.min(minX, location.getXCoordinate());
+            maxX = Math.max(maxX, location.getXCoordinate());
+            minY = Math.min(minY, location.getYCoordinate());
+            maxY = Math.max(maxY, location.getYCoordinate());
+        }
+
+        // Include previous day orders in bounds
+        List<Order> previousDayOrders = distributor.getPreviousDayOrders();
+        for (Order order : previousDayOrders) {
+            Point location = order.getDeliveryLocation();
+            minX = Math.min(minX, location.getXCoordinate());
+            maxX = Math.max(maxX, location.getXCoordinate());
+            minY = Math.min(minY, location.getYCoordinate());
+            maxY = Math.max(maxY, location.getYCoordinate());
+        }
+
+        // Include current day orders in bounds
+        List<Order> currentDayOrders = distributor.getCurrentDayOrders();
+        for (Order order : currentDayOrders) {
+            Point location = order.getDeliveryLocation();
             minX = Math.min(minX, location.getXCoordinate());
             maxX = Math.max(maxX, location.getXCoordinate());
             minY = Math.min(minY, location.getYCoordinate());
@@ -400,6 +528,30 @@ public class MapPanel extends JPanel {
         }
         
         return Math.max(1, spacing);
+    }
+
+    private void drawOrder(Graphics2D g2d, Order order, Color color) {
+        Point location = order.getDeliveryLocation();
+        Point screenPos = worldToScreen(location.getXCoordinate(), location.getYCoordinate());
+        
+        int x = screenPos.getXCoordinate();
+        int y = screenPos.getYCoordinate();
+        
+        // Highlight hovered order
+        if (order == hoveredOrder) {
+            g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 100));
+            g2d.fillOval(x - ORDER_SIZE / 2 - 3, y - ORDER_SIZE / 2 - 3, 
+                        ORDER_SIZE + 6, ORDER_SIZE + 6);
+        }
+
+        // Draw order as a filled circle
+        g2d.setColor(color);
+        g2d.fillOval(x - ORDER_SIZE / 2, y - ORDER_SIZE / 2, ORDER_SIZE, ORDER_SIZE);
+        
+        // Draw border
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(1.0f));
+        g2d.drawOval(x - ORDER_SIZE / 2, y - ORDER_SIZE / 2, ORDER_SIZE, ORDER_SIZE);
     }
 
     private void drawWarehouse(Graphics2D g2d, Warehouse warehouse) {
