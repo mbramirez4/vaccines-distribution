@@ -67,6 +67,10 @@ public class Order {
         computeDispatchers();
     }
 
+    public Map<PositionedObject, Integer> getDispatchers() {
+        return dispatchers;
+    }
+
     public void setProcessingDate(int processingDate) {
         if (this.processingDate >= 0) {
             throw new RuntimeException("Processing date already set");
